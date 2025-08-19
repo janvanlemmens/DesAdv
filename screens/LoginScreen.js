@@ -2,13 +2,26 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 
+
 export default function LoginScreen({ onLogin }) {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+
+  
+  
+
   const handleLogin = async () => {
+
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+   
+  console.log(apiUrl);
+
+    //Alert.alert('API URL', `The API URL is: ${apiUrl}`);
+
       if (!username || !password) {
       Alert.alert('Missing Fields', 'Please enter both username and password');
       return;
@@ -17,12 +30,18 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await axios.post('https://your-api.com/login', {
-        username,
-        password
-      });
+      const response = await axios.post(apiUrl+"/rest.desadv.cls?func=login", {
+        user : username,
+        password: password
+      },
+        {
+           headers: {
+             "Content-Type": "application/json",
+            },
+          });
 
       // Assume response contains { success: true } if login is valid
+      console.log("res-"+response.data.success)
       if (response.data.success) {
         onLogin(); // navigate to the main app
       } else {

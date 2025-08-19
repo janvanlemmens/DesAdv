@@ -1,0 +1,8 @@
+### Login request
+POST https://extranet.qteam.be/VPLD/rest.desadv.cls?func=login
+Content-Type: application/json
+
+{
+  "user": "scann",
+  "password": "scan"
+}
