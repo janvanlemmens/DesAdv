@@ -3,6 +3,16 @@ POST https://extranet.qteam.be/VPLD/rest.desadv.cls?func=login
 Content-Type: application/json
 
 {
-  "user": "scann",
+  "user": "scan",
   "password": "scan"
+}
+
+### gDeadlist
+
+POST https://extranet.qteam.be/VPLD/rest.desadv.cls?func=gDeAdlist
+Content-Type: application/json
+
+{
+  "depot": 8
+  
 }

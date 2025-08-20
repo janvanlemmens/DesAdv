@@ -1,13 +1,29 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View, FlatList } from 'react-native'
+import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
+import { BonsSchema } from '../models/Bons'
+import * as SecureStore from 'expo-secure-store';
 
 export default function OverzichtScreen() {
+
+const [depot, setDepot] = useState(null);
+
+  useEffect(() => {
+    async function loadDepot() {
+      console.log("voor");
+      const result = await SecureStore.getItemAsync("depot");
+      console.log("na");
+      setDepot(result);
+    }
+    loadDepot();
+  }, []);
+
+
   return (
     <View>
       <Text style={styles.container}>
-        OverzichtScreen
-      
+        Depot : {depot ?? "nog niet geladen"}
+       blablabzz
       </Text>
     </View>
   )

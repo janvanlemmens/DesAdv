@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 
 export default function LoginScreen({ onLogin }) {
@@ -17,10 +18,6 @@ export default function LoginScreen({ onLogin }) {
 
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
-   
-  console.log(apiUrl);
-
-    //Alert.alert('API URL', `The API URL is: ${apiUrl}`);
 
       if (!username || !password) {
       Alert.alert('Missing Fields', 'Please enter both username and password');
@@ -41,8 +38,9 @@ export default function LoginScreen({ onLogin }) {
           });
 
       // Assume response contains { success: true } if login is valid
-      console.log("res-"+response.data.success)
+      
       if (response.data.success) {
+        await SecureStore.setItemAsync("depot",response.data.depot)
         onLogin(); // navigate to the main app
       } else {
         Alert.alert('Login Failed', response.data.message || 'Invalid credentials');
