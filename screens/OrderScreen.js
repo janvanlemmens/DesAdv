@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-export default function CreatieScreen() {
+const OrderScreen = () => {
   return (
     <View>
-      <Text>CreatieScreen</Text>
+      <Text>BonScreen</Text>
     </View>
   )
 }
+
+export default OrderScreen
 
 const styles = StyleSheet.create({})

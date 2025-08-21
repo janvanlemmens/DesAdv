@@ -1,10 +1,10 @@
-import { StyleSheet, Text, View, FlatList } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
-import { BonsSchema } from '../models/Bons'
+import { OrdersSchema } from '../models/OrdersSchema'
 import * as SecureStore from 'expo-secure-store';
 
-export default function OverzichtScreen() {
+export default function OrdersScreen() {
 
 const [depot, setDepot] = useState(null);
 
@@ -14,8 +14,20 @@ const [depot, setDepot] = useState(null);
       const result = await SecureStore.getItemAsync("depot");
       console.log("na");
       setDepot(result);
+      return result;
     }
-    loadDepot();
+
+    async function gDeadlist(dpa) {
+       console.log("depot",dpa)
+    }
+
+    async function runBoth() {
+      const depotResult = await loadDepot();
+      await gDeadlist(depotResult);
+    }
+
+    runBoth();
+    
   }, []);
 
 
@@ -23,7 +35,7 @@ const [depot, setDepot] = useState(null);
     <View>
       <Text style={styles.container}>
         Depot : {depot ?? "nog niet geladen"}
-       blablabzz
+       blablabaa
       </Text>
     </View>
   )
@@ -112,5 +124,44 @@ realm.write(() => {
   realm.delete(allUsers);
 });
 
+### fetchstore
+
+const fetchAndStore = async (dpa) => {
+const res = await axios.post("https://your-api.com/orders");
+const data = res.data;
+
+
+const realm = await Realm.open({ 
+schema: [OrderSchema],
+path: orders.realm
+ });
+
+
+realm.write(() => {
+data.forEach(item => {
+const deliveryNote = item.order.split("||")[3];
+
+
+realm.create("Order", {
+id: item.order,
+deliveryNote, // stored separately for querying
+depot: item.depot,
+arrival: item.arrival,
+supplier: item.supplier,
+article: item.article,
+quantity: parseInt(item.quantity, 10),
+}, Realm.UpdateMode.Modified);
+});
+});
+
+
+// Example queries
+const distinctNotes = realm.objects("Order").distinct("deliveryNote");
+console.log("Distinct deliveryNotes:", distinctNotes.map(o => o.deliveryNote));
+
+
+const ordersByNote = realm.objects("Order").filtered("deliveryNote = '22508190008173104'");
+console.log("Orders for note 22508190008173104:", ordersByNote.length);
+};
 
 */

@@ -1,17 +1,17 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import OverzichtScreen from '../screens/OverzichtScreen';
-import CreatieScreen from '../screens/CreatieScreen';
-import BonScreen from '../screens/BonScreen';
+import OrdersScreen from '../screens/OrdersScreen';
+import SearchScreen from '../screens/SearchScreen';
+import OrderScreen from '../screens/OrderScreen';
 
 const Tab = createBottomTabNavigator();
 
 export default function TabsNavigator() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="Overzicht" component={OverzichtScreen} />
-      <Tab.Screen name="Creatie" component={CreatieScreen} />
-      <Tab.Screen name="Bon" component={BonScreen} />
+      <Tab.Screen name="Orders" component={OrdersScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Order" component={OrderScreen} />
     </Tab.Navigator>
   );
 }
