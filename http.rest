@@ -13,6 +13,6 @@ POST https://extranet.qteam.be/VPLD/rest.desadv.cls?func=gDeAdlist
 Content-Type: application/json
 
 {
-  "depot": 8
+  "depot": 59
   
 }

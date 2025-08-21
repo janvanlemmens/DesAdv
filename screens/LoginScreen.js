@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Realm from "realm";
 
 
 export default function LoginScreen({ onLogin }) {
@@ -10,14 +11,11 @@ export default function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-
-  
   
 
   const handleLogin = async () => {
 
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-
 
       if (!username || !password) {
       Alert.alert('Missing Fields', 'Please enter both username and password');

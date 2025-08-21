@@ -3,22 +3,102 @@ import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
 import { OrdersSchema } from '../models/OrdersSchema'
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
+
+const api = axios.create();
+
+api.interceptors.request.use((config) => {
+  console.log("[Request]",config);
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => {
+  console.log("[Response]",res);
+  return res;
+},
+(err) => {
+  console.log("[Error]",err);
+  return Promise.reject(err);
+}
+);
+
+
 
 export default function OrdersScreen() {
 
 const [depot, setDepot] = useState(null);
+const [orders, setOrders] = useState([])
+
 
   useEffect(() => {
     async function loadDepot() {
-      console.log("voor");
       const result = await SecureStore.getItemAsync("depot");
-      console.log("na");
+     
       setDepot(result);
       return result;
     }
 
     async function gDeadlist(dpa) {
-       console.log("depot",dpa)
+
+      const config = {
+         schema: [OrdersSchema],
+        path: "orders.realm"
+      }
+      
+     // Realm.deleteFile(config);  // ⚠️ deletes all data
+     //Realm.deleteFile();
+     
+      
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+     
+      const res = await axios.post(apiUrl+"/rest.desadv.cls?func=gDeAdlist", {
+        depot : dpa, 
+      },
+        {
+           headers: {
+             "Content-Type": "application/json",
+            },
+          });
+      const data = res.data;
+
+      try {
+        const realm = await Realm.open({
+        schema: [OrdersSchema],
+        path: "orders.realm"
+      })
+         realm.write(() => {
+           data.forEach(item => {
+              const deliveryNote = item.order.split("||")[3];
+              console.log("el",item.order)
+              const savedOrder = realm.create("Orders", {
+                  id: item.order,
+                  deliveryNote,
+                  depot: item.depot,
+                  arrival: item.arrival,
+                  supplier: item.supplier,
+                  article: item.article,
+                  quantity: parseInt(item.quantity,10),
+                  quantitycfm: 0
+              }, Realm.UpdateMode.Modified)
+
+              console.log("Created:",savedOrder.id,"->", savedOrder.deliveryNote)
+      });
+      });
+
+      const notes = realm.objects("Orders").distinct("deliveryNote");
+      setOrders([...notes.map(o => o.deliveryNote)]);
+      console.log("ord",orders)
+
+      if (realm && !realm.isClosed) {
+        realm.close()
+      }
+
+      } catch(e) {
+        console.log("Realm create failed",e);
+      }
+
+       
     }
 
     async function runBoth() {
@@ -35,7 +115,7 @@ const [depot, setDepot] = useState(null);
     <View>
       <Text style={styles.container}>
         Depot : {depot ?? "nog niet geladen"}
-       blablabaa
+       blablppp
       </Text>
     </View>
   )

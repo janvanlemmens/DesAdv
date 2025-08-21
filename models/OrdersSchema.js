@@ -1,14 +1,15 @@
 export const OrdersSchema = {
   name: "Orders",
-  primaryKey: "_id",
+  primaryKey: "id",
   properties: {
-    _id: "string", // full order string
+    id: "string", // full order string
     deliveryNote: { type: "string", indexed: true }, // extracted 4th part
     depot: { type: "string", indexed: true },
     arrival: "string",
     supplier: { type: "string", indexed: true },
     article: "string",
     quantity: "int",
+    quantitycfm: { type: "int", default: 0 }
   },
 };
 
