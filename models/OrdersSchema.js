@@ -8,8 +8,12 @@ export const OrdersSchema = {
     arrival: "string",
     supplier: { type: "string", indexed: true },
     article: "string",
+    description: "string",
+    profile: "string",
+    ean: "string",
+    brand: "string",
     quantity: "int",
-    quantitycfm: { type: "int", default: 0 }
+    quantitycfm: { type: "int", default: 0 } 
   },
 };
 

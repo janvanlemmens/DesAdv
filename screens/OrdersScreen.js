@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, FlatList, SafeAreaView} from 'react-native'
+import { StatusBar } from "react-native";
 import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
 import { OrdersSchema } from '../models/OrdersSchema'
@@ -29,6 +30,20 @@ export default function OrdersScreen() {
 
 const [depot, setDepot] = useState(null);
 const [orders, setOrders] = useState([])
+
+function getDistinctNotes(notes) {
+    const map = new Map();
+    notes.forEach(item => {
+      if (!map.has(item.deliveryNote)) {
+        map.set(item.deliveryNote, {
+          deliveryNote: item.deliveryNote,
+          arrival: item.arrival,
+          supplier: item.supplier
+        })
+      }
+    })
+    return Array.from(map.values());
+  }
 
 
   useEffect(() => {
@@ -78,17 +93,37 @@ const [orders, setOrders] = useState([])
                   arrival: item.arrival,
                   supplier: item.supplier,
                   article: item.article,
+                  description : item.description,
+                  profile: item.profile,
+                  ean: item.ean,
+                  brand: item.brand,
                   quantity: parseInt(item.quantity,10),
                   quantitycfm: 0
               }, Realm.UpdateMode.Modified)
 
               console.log("Created:",savedOrder.id,"->", savedOrder.deliveryNote)
+             
       });
       });
+  const results = realm.objects("Orders");
+  const plainOrders = results.map(order => ({
+  id: order.id,
+  deliveryNote: order.deliveryNote,
+  depot: order.depot,
+  arrival: order.arrival,
+  supplier: order.supplier,
+  article: order.article,
+  description: order.description,
+  profile: order.profile,
+  ean: order.ean,
+  brand: order.brand,
+  quantity: order.quantity,
+  quantitycfm: order.quantitycfm,
+  }));
+  setOrders(plainOrders);
 
-      const notes = realm.objects("Orders").distinct("deliveryNote");
-      setOrders([...notes.map(o => o.deliveryNote)]);
-      console.log("ord",orders)
+
+      
 
       if (realm && !realm.isClosed) {
         realm.close()
@@ -110,20 +145,53 @@ const [orders, setOrders] = useState([])
     
   }, []);
 
+  
+
+  const distinctNotes = getDistinctNotes(orders)
 
   return (
-    <View>
-      <Text style={styles.container}>
-        Depot : {depot ?? "nog niet geladen"}
-       blablppp
-      </Text>
-    </View>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
+     <Text style={styles.title}>Delivery Notes</Text>
+     <FlatList
+      data={distinctNotes}
+      keyExtractor={(item) => item.deliveryNote}
+      renderItem={({ item }) => (
+        <View style={styles.card}>
+          <Text style={styles.deliverynote}>📦 Delivery Note: {item.deliveryNote}</Text>
+          <Text>📅 Arrival: {item.arrival}</Text>
+          <Text>🏭 Supplier: {item.supplier}</Text>
+        </View>
+      )}
+    />
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container : {
-    margin : 8
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#f5f5f5",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 12
+  },
+  card: {
+    backgroundColor: "#fff",
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    elevation: 3,
+    shadowColor: "#000", //shadow on ios
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  deliverynote: {
+    fontWeight: "600",
   }
 })
 
@@ -245,3 +313,17 @@ console.log("Orders for note 22508190008173104:", ordersByNote.length);
 };
 
 */
+
+ /*
+     <FlatList
+      data={distinctNotes}
+      keyExtractor={(item) => item.deliveryNote}
+      renderItem={({ item }) => (
+        <View style={{ padding: 10, borderBottomWidth: 1, borderColor: "#ddd" }}>
+          <Text>📦 Delivery Note: {item.deliveryNote}</Text>
+          <Text>📅 Arrival: {item.arrival}</Text>
+          <Text>🏭 Supplier: {item.supplier}</Text>
+        </View>
+      )}
+    />
+    */
