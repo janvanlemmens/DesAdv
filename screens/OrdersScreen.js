@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, FlatList, SafeAreaView} from 'react-native'
+import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable} from 'react-native'
 import { StatusBar } from "react-native";
 import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
 import { OrdersSchema } from '../models/OrdersSchema'
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+
 
 const api = axios.create();
 
@@ -26,10 +27,11 @@ api.interceptors.response.use(
 
 
 
-export default function OrdersScreen() {
+export default function OrdersScreen({navigation}) {
 
 const [depot, setDepot] = useState(null);
 const [orders, setOrders] = useState([])
+
 
 function getDistinctNotes(notes) {
     const map = new Map();
@@ -156,11 +158,15 @@ function getDistinctNotes(notes) {
       data={distinctNotes}
       keyExtractor={(item) => item.deliveryNote}
       renderItem={({ item }) => (
+        <Pressable onPress={() => {
+          navigation.navigate("Order",{"deliveryNote" : item.deliveryNote})
+        }}>
         <View style={styles.card}>
           <Text style={styles.deliverynote}>📦 Delivery Note: {item.deliveryNote}</Text>
           <Text>📅 Arrival: {item.arrival}</Text>
           <Text>🏭 Supplier: {item.supplier}</Text>
         </View>
+        </Pressable>
       )}
     />
     </SafeAreaView>

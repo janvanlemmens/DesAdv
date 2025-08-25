@@ -17,6 +17,7 @@ function withIconTitle(title, iconName) {
 }
 
 export default function TabsNavigator() {
+  //<Ionicons name="scan-outline" size={120} color="#4F46E5" />
   return (
       <Tab.Navigator
       screenOptions={{
