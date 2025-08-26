@@ -3,6 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } f
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Realm from "realm";
+import CustomPressable from '../components/CustomPressable';
 
 
 export default function LoginScreen({ onLogin }) {
@@ -39,6 +40,7 @@ export default function LoginScreen({ onLogin }) {
       
       if (response.data.success) {
         await SecureStore.setItemAsync("depot",response.data.depot)
+        
         onLogin(); // navigate to the main app
       } else {
         Alert.alert('Login Failed', response.data.message || 'Invalid credentials');
@@ -52,7 +54,7 @@ export default function LoginScreen({ onLogin }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Despatch Advice</Text>
       <TextInput
         placeholder="Username"
         style={styles.input}
@@ -69,7 +71,12 @@ export default function LoginScreen({ onLogin }) {
       {loading ? (
         <ActivityIndicator size="large" color="#007bff" />
       ) : (
-        <Button title="Login" onPress={handleLogin} />
+        <CustomPressable
+              text="Login"
+              borderRadius={18}
+              hoverColor="#0EA371" // only on web
+              onPress={handleLogin}
+            />
       )}
     </View>
   );

@@ -1,12 +1,30 @@
 // OrderItem.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import RealmHelper from "../RealmHelper";
+
 
 export default function OrderItem({ item }) {
   const [confirmedQty, setConfirmedQty] = useState(item.quantitycfm || 0);
 
-  const increment = () => setConfirmedQty(confirmedQty + 1);
-  const decrement = () => setConfirmedQty(Math.max(0, confirmedQty - 1));
+ useEffect(() => {
+    setConfirmedQty(item.quantitycfm || 0);
+  }, [item.quantitycfm]);
+
+  const updateRealmQty = (newQty) => {
+    setConfirmedQty(newQty);
+    const realm = RealmHelper.getRealm()
+
+    if (!realm) return;
+
+    realm.write(() => {
+      const order = realm.objectForPrimaryKey("Orders", item.id);
+      if (order) order.quantitycfm = newQty;
+    });
+  };
+
+  const increment = () => updateRealmQty(confirmedQty + 1);
+  const decrement = () => updateRealmQty(Math.max(0, confirmedQty - 1));
 
   return (
     <View style={styles.card}>
@@ -21,7 +39,7 @@ export default function OrderItem({ item }) {
       {/* Line 3 */}
       <View style={styles.row}>
         <Text style={styles.subtext}>
-          {item.ean} - {item.quantity}
+          EAN : {item.ean} - QTY : {item.quantity}
         </Text>
 
         <View style={styles.qtyContainer}>
@@ -35,7 +53,7 @@ export default function OrderItem({ item }) {
             value={String(confirmedQty)}
             onChangeText={(text) => {
               const num = parseInt(text) || 0;
-              setConfirmedQty(num);
+              updateRealmQty(num);
             }}
           />
 
@@ -74,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   qtyButton: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#c96161ff",
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,

@@ -4,32 +4,29 @@ import React,  { useEffect, useState } from 'react'
 import Realm from 'realm'
 import { OrdersSchema } from '../models/OrdersSchema'
 import OrderItem from '../components/OrderItem'
+import RealmHelper from '../RealmHelper';
 
 const OrderScreen = ({route, navigation}) => {
 const {deliveryNote} = route.params
 const [order, setOrder] = useState([]);
 
 useEffect(() => {
-    let realm;
+    
 
     async function loadDelines() {
       try {
         console.log("📂 Opening Realm...");
 
-        realm = await Realm.open({
-                schema: [OrdersSchema],
-                path: "orders.realm"
-              });
+        const  realm = await RealmHelper.getRealm();
         console.log("✅ Realm opened");
+       
 
         const results = realm
           .objects("Orders")
           .filtered("deliveryNote == $0", deliveryNote);
 
-           console.log("📊 Query results:", results.length);
-
-        setOrder(Array.from(results));
-        console.log("results", results); // ✅ log realm query, not old state
+         setOrder(results); // keep Realm objects live
+        console.log("📊 Query results:", results.length);
       } catch (e) {
         console.error("Error opening realm", e);
       }
@@ -37,11 +34,7 @@ useEffect(() => {
 
     loadDelines();
 
-    return () => {
-      if (realm && !realm.isClosed) {
-        realm.close();
-      }
-    };
+    
   }, [deliveryNote]);
 
   useEffect(() => {

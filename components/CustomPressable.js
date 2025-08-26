@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 
-const defaultBg = "#615bdaff";
+const defaultBg = "#c96161ff";
 const defaultText = "#FFFFFF";
 
 // darkens a hex color (#RRGGBB)
@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
+     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,

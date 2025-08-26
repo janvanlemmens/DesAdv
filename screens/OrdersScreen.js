@@ -5,6 +5,9 @@ import Realm from 'realm'
 import { OrdersSchema } from '../models/OrdersSchema'
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import { useNavigation } from "@react-navigation/native"
+import RealmHelper from '../RealmHelper';
+import LogoutButton from '../components/LogoutButton';
 
 
 const api = axios.create();
@@ -27,48 +30,53 @@ api.interceptors.response.use(
 
 
 
-export default function OrdersScreen({navigation}) {
+export default function OrdersScreen({}) {
 
 const [depot, setDepot] = useState(null);
 const [orders, setOrders] = useState([])
 
+const navigation = useNavigation();
 
 function getDistinctNotes(notes) {
-    const map = new Map();
-    notes.forEach(item => {
-      if (!map.has(item.deliveryNote)) {
-        map.set(item.deliveryNote, {
-          deliveryNote: item.deliveryNote,
-          arrival: item.arrival,
-          supplier: item.supplier
-        })
+  const map = new Map();
+
+  notes.forEach(item => {
+    // Check if this deliveryNote already exists in the map
+    if (!map.has(item.deliveryNote)) {
+      // Determine if this order is confirmed
+      const isConfirmed = item.quantitycfm > 0;
+
+      map.set(item.deliveryNote, {
+        deliveryNote: item.deliveryNote,
+        arrival: item.arrival,
+        supplier: item.supplier,
+        confirmed: isConfirmed // add the property
+      });
+    } else {
+      // If deliveryNote already exists, update confirmed if any item is confirmed
+      const existing = map.get(item.deliveryNote);
+      if (item.quantitycfm > 0) {
+        existing.confirmed = true;
       }
-    })
-    return Array.from(map.values());
-  }
+    }
+  });
+
+  return Array.from(map.values());
+}
 
 
   useEffect(() => {
+    let isActive = true;
+
     async function loadDepot() {
       const result = await SecureStore.getItemAsync("depot");
-     
       setDepot(result);
       return result;
     }
 
-    async function gDeadlist(dpa) {
+    async function fetchAndSaveOrders(dpa) {
 
-      const config = {
-         schema: [OrdersSchema],
-        path: "orders.realm"
-      }
-      
-     // Realm.deleteFile(config);  // ⚠️ deletes all data
-     //Realm.deleteFile();
-     
-      
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-     
       const res = await axios.post(apiUrl+"/rest.desadv.cls?func=gDeAdlist", {
         depot : dpa, 
       },
@@ -77,16 +85,22 @@ function getDistinctNotes(notes) {
              "Content-Type": "application/json",
             },
           });
+
+          if (!isActive) return;
+
       const data = res.data;
 
       try {
-        const realm = await Realm.open({
-        schema: [OrdersSchema],
-        path: "orders.realm"
-      })
+        const realm = await RealmHelper.openRealm()
+
          realm.write(() => {
            data.forEach(item => {
               const deliveryNote = item.order.split("||")[3];
+
+              // Check if order already exists
+            const existingOrder = realm.objectForPrimaryKey("Orders", item.order);
+
+
               console.log("el",item.order)
               const savedOrder = realm.create("Orders", {
                   id: item.order,
@@ -100,36 +114,15 @@ function getDistinctNotes(notes) {
                   ean: item.ean,
                   brand: item.brand,
                   quantity: parseInt(item.quantity,10),
-                  quantitycfm: 0
+                  quantitycfm: existingOrder ? existingOrder.quantitycfm : 0
               }, Realm.UpdateMode.Modified)
 
               console.log("Created:",savedOrder.id,"->", savedOrder.deliveryNote)
              
       });
       });
-  const results = realm.objects("Orders");
-  const plainOrders = results.map(order => ({
-  id: order.id,
-  deliveryNote: order.deliveryNote,
-  depot: order.depot,
-  arrival: order.arrival,
-  supplier: order.supplier,
-  article: order.article,
-  description: order.description,
-  profile: order.profile,
-  ean: order.ean,
-  brand: order.brand,
-  quantity: order.quantity,
-  quantitycfm: order.quantitycfm,
-  }));
-  setOrders(plainOrders);
-
-
-      
-
-      if (realm && !realm.isClosed) {
-        realm.close()
-      }
+      const results = realm.objects("Orders");
+       if (isActive) setOrders([...results]);
 
       } catch(e) {
         console.log("Realm create failed",e);
@@ -138,37 +131,44 @@ function getDistinctNotes(notes) {
        
     }
 
-    async function runBoth() {
+    async function init() {
       const depotResult = await loadDepot();
-      await gDeadlist(depotResult);
+      if (depotResult) await fetchAndSaveOrders(depotResult);
     }
 
-    runBoth();
+    init();
+    return () => {
+      isActive = false;
+    };
     
   }, []);
 
-  
 
-  const distinctNotes = getDistinctNotes(orders)
+  // First, sort and prepare distinct notes
+  const distinctNotesSorted = getDistinctNotes(orders)
+  .sort((a, b) => Number(b.confirmed)- Number(a.confirmed)); // confirmed first
+ console.log("notessorted",distinctNotesSorted )
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
      <Text style={styles.title}>Delivery Notes</Text>
      <FlatList
-      data={distinctNotes}
+      data={distinctNotesSorted}
       keyExtractor={(item) => item.deliveryNote}
       renderItem={({ item }) => (
         <Pressable onPress={() => {
           navigation.navigate("Order",{"deliveryNote" : item.deliveryNote})
         }}>
-        <View style={styles.card}>
+       <View style={[styles.card, item.confirmed && styles.confirmedCard]}>
           <Text style={styles.deliverynote}>📦 Delivery Note: {item.deliveryNote}</Text>
           <Text>📅 Arrival: {item.arrival}</Text>
           <Text>🏭 Supplier: {item.supplier}</Text>
+          <Text>cfm {item.confirmed}</Text>
         </View>
         </Pressable>
       )}
     />
+    <LogoutButton/>
     </SafeAreaView>
   )
 }
@@ -195,6 +195,10 @@ const styles = StyleSheet.create({
     shadowColor: "#000", //shadow on ios
     shadowOpacity: 0.1,
     shadowRadius: 4
+  },
+  confirmedCard: {
+    backgroundColor: "#e0ffe0", // light green for confirmed
+    borderColor: "#00aa00",
   },
   deliverynote: {
     fontWeight: "600",
