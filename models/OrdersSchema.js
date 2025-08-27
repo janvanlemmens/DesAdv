@@ -13,7 +13,7 @@ export const OrdersSchema = {
     ean: "string",
     brand: "string",
     quantity: "int",
-    quantitycfm: { type: "int", default: 0 } 
+    quantitycfm: { type: "int", default: 0 } ,
   },
 };
 

@@ -1,11 +1,13 @@
 // OrderItem.js
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
-import RealmHelper from "../RealmHelper";
+import { useRealm } from '../useRealm';
 
 
 export default function OrderItem({ item }) {
   const [confirmedQty, setConfirmedQty] = useState(item.quantitycfm || 0);
+
+  const realm = useRealm();
 
  useEffect(() => {
     setConfirmedQty(item.quantitycfm || 0);
@@ -13,7 +15,6 @@ export default function OrderItem({ item }) {
 
   const updateRealmQty = (newQty) => {
     setConfirmedQty(newQty);
-    const realm = RealmHelper.getRealm()
 
     if (!realm) return;
 

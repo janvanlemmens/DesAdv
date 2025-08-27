@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Realm from 'realm'
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import LoginScreen from './screens/LoginScreen';
 import TabsNavigator from './navigation/TabsNavigator'; // your existing tab navigation
@@ -12,18 +12,13 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // <- basic auth state
 
   const handleLogin = () => {
-      /*
-     const config = {
-        schema: [OrdersSchema],
-        path: "orders.realm"
-        }  
-        Realm.deleteFile(config);  // ⚠️ deletes all data
-      */
+    
          setIsLoggedIn(true)
 
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isLoggedIn ? (
@@ -35,5 +30,6 @@ export default function App() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }

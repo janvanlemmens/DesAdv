@@ -1,13 +1,14 @@
-import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable} from 'react-native'
+import { StyleSheet, Text, View, FlatList, SafeAreaView, Pressable, TextInput} from 'react-native'
 import { StatusBar } from "react-native";
-import React,  { useEffect, useState } from 'react'
+import React,  { useEffect, useState, useRef } from 'react'
 import Realm from 'realm'
-import { OrdersSchema } from '../models/OrdersSchema'
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import { useNavigation } from "@react-navigation/native"
-import RealmHelper from '../RealmHelper';
 import LogoutButton from '../components/LogoutButton';
+import { RefreshControl } from 'react-native-gesture-handler';
+import { useRealm } from '../useRealm';
+import { useObjects } from '../useObjects';
 
 
 const api = axios.create();
@@ -32,21 +33,27 @@ api.interceptors.response.use(
 
 export default function OrdersScreen({}) {
 
-const [depot, setDepot] = useState(null);
-const [orders, setOrders] = useState([])
+const [refreshing, setRefreshing] = useState(false)
+const [supplierQuery, setSupplierQuery] = useState("");
+const [noteQuery, setNoteQuery] = useState("");
 
 const navigation = useNavigation();
+const realm = useRealm();
+const notes = useObjects("Orders") //realm's live collection
+const flatListRef = useRef(null);
 
-function getDistinctNotes(notes) {
+
+function getDistinctNotes(dlvs) {
   const map = new Map();
 
-  notes.forEach(item => {
+  dlvs.forEach(item => {
     // Check if this deliveryNote already exists in the map
-    if (!map.has(item.deliveryNote)) {
+    if (!map.has(item.id)) {
       // Determine if this order is confirmed
       const isConfirmed = item.quantitycfm > 0;
 
       map.set(item.deliveryNote, {
+        orderid: item.id,
         deliveryNote: item.deliveryNote,
         arrival: item.arrival,
         supplier: item.supplier,
@@ -54,7 +61,7 @@ function getDistinctNotes(notes) {
       });
     } else {
       // If deliveryNote already exists, update confirmed if any item is confirmed
-      const existing = map.get(item.deliveryNote);
+      const existing = map.get(item.id);
       if (item.quantitycfm > 0) {
         existing.confirmed = true;
       }
@@ -63,19 +70,20 @@ function getDistinctNotes(notes) {
 
   return Array.from(map.values());
 }
-
+  useEffect(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [notes]); // whenever notes change, jump to top
 
   useEffect(() => {
-    let isActive = true;
+    fetchAndSaveOrders();
+ 
+  }, []);
 
-    async function loadDepot() {
-      const result = await SecureStore.getItemAsync("depot");
-      setDepot(result);
-      return result;
-    }
+   async function fetchAndSaveOrders() {
 
-    async function fetchAndSaveOrders(dpa) {
-
+      const dpa = await SecureStore.getItemAsync("depot");
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await axios.post(apiUrl+"/rest.desadv.cls?func=gDeAdlist", {
         depot : dpa, 
@@ -86,25 +94,23 @@ function getDistinctNotes(notes) {
             },
           });
 
-          if (!isActive) return;
-
       const data = res.data;
 
       try {
-        const realm = await RealmHelper.openRealm()
 
+         if (!realm) return;
          realm.write(() => {
+
+            //Realm.deleteFile({ schema: [OrdersSchema], path: "orders.realm" });
+            realm.delete(realm.objects("Orders"));
+
            data.forEach(item => {
-              const deliveryNote = item.order.split("||")[3];
-
               // Check if order already exists
-            const existingOrder = realm.objectForPrimaryKey("Orders", item.order);
+             const existingOrder = realm.objectForPrimaryKey("Orders", item.order);
 
-
-              console.log("el",item.order)
               const savedOrder = realm.create("Orders", {
                   id: item.order,
-                  deliveryNote,
+                  deliveryNote: item.ref1AA,
                   depot: item.depot,
                   arrival: item.arrival,
                   supplier: item.supplier,
@@ -114,61 +120,85 @@ function getDistinctNotes(notes) {
                   ean: item.ean,
                   brand: item.brand,
                   quantity: parseInt(item.quantity,10),
-                  quantitycfm: existingOrder ? existingOrder.quantitycfm : 0
+                  quantitycfm: existingOrder ? existingOrder.quantitycfm : 0,
+                
               }, Realm.UpdateMode.Modified)
 
               console.log("Created:",savedOrder.id,"->", savedOrder.deliveryNote)
              
       });
       });
-      const results = realm.objects("Orders");
-       if (isActive) setOrders([...results]);
+        notes=realm.object("Orders")
 
       } catch(e) {
         console.log("Realm create failed",e);
-      }
-
-       
+      }    
     }
 
-    async function init() {
-      const depotResult = await loadDepot();
-      if (depotResult) await fetchAndSaveOrders(depotResult);
-    }
-
-    init();
-    return () => {
-      isActive = false;
+    const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAndSaveOrders();
+    setRefreshing(false);
     };
-    
-  }, []);
 
-
+   
   // First, sort and prepare distinct notes
-  const distinctNotesSorted = getDistinctNotes(orders)
+  const distinctNotesSorted = getDistinctNotes(notes)
   .sort((a, b) => Number(b.confirmed)- Number(a.confirmed)); // confirmed first
+  const filteredData = distinctNotesSorted.filter((item) => {
+  const matchesSupplier = supplierQuery
+    ? item.supplier?.toLowerCase().includes(supplierQuery.toLowerCase())
+    : true;
+
+  const matchesNote = noteQuery
+    ? item.deliveryNote?.toLowerCase().includes(noteQuery.toLowerCase())
+    : true;
+
+  return matchesSupplier && matchesNote;
+});
+
  console.log("notessorted",distinctNotesSorted )
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
      <Text style={styles.title}>Delivery Notes</Text>
+     <View style={{ flexDirection: "row", padding: 8, gap: 8 }}>
+  <TextInput
+    style={[styles.searchInput, { flex: 1 }]}
+    placeholder="Search by Supplier..."
+    value={supplierQuery}
+    onChangeText={setSupplierQuery}
+  />
+  <TextInput
+    style={[styles.searchInput, { flex: 1 }]}
+    placeholder="Search by Delivery Note..."
+    value={noteQuery}
+    onChangeText={setNoteQuery}
+  />
+</View>
+
+
      <FlatList
-      data={distinctNotesSorted}
-      keyExtractor={(item) => item.deliveryNote}
+     ref={flatListRef}
+      data={filteredData}
+      keyExtractor={(item) => item.orderid}
       renderItem={({ item }) => (
         <Pressable onPress={() => {
-          navigation.navigate("Order",{"deliveryNote" : item.deliveryNote})
+          navigation.navigate("Order",{"orderid" : item.orderid})
         }}>
        <View style={[styles.card, item.confirmed && styles.confirmedCard]}>
           <Text style={styles.deliverynote}>📦 Delivery Note: {item.deliveryNote}</Text>
           <Text>📅 Arrival: {item.arrival}</Text>
           <Text>🏭 Supplier: {item.supplier}</Text>
-          <Text>cfm {item.confirmed}</Text>
         </View>
         </Pressable>
-      )}
+      )
+    }
+    refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     />
-    <LogoutButton/>
+   {/*<LogoutButton/>*/} 
     </SafeAreaView>
   )
 }
@@ -202,7 +232,15 @@ const styles = StyleSheet.create({
   },
   deliverynote: {
     fontWeight: "600",
-  }
+  },
+  searchInput: {
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  padding: 8,
+  marginBottom: 10,
+}
+
 })
 
 /*
@@ -336,4 +374,15 @@ console.log("Orders for note 22508190008173104:", ordersByNote.length);
         </View>
       )}
     />
+
+    async function loadDepot() {
+      const result = await SecureStore.getItemAsync("depot");
+      setDepot(result);
+      return result;
+    }
+
+    async function init() {
+      const depotResult = await loadDepot();
+      if (depotResult) await fetchAndSaveOrders(depotResult);
+    }
     */

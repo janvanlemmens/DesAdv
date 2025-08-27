@@ -1,14 +1,15 @@
 import { StyleSheet, Text, View, FlatList,TextInput, Pressable } from 'react-native'
 import CustomPressable from '../components/CustomPressable'
 import React,  { useEffect, useState } from 'react'
-import Realm from 'realm'
-import { OrdersSchema } from '../models/OrdersSchema'
 import OrderItem from '../components/OrderItem'
-import RealmHelper from '../RealmHelper';
+import { useRealm } from '../useRealm';
 
 const OrderScreen = ({route, navigation}) => {
-const {deliveryNote} = route.params
+const {orderid} = route.params ?? {};
 const [order, setOrder] = useState([]);
+const ref1AA = orderid.split("|")[1]
+
+const realm = useRealm();
 
 useEffect(() => {
     
@@ -17,13 +18,12 @@ useEffect(() => {
       try {
         console.log("📂 Opening Realm...");
 
-        const  realm = await RealmHelper.getRealm();
-        console.log("✅ Realm opened");
+       if (!realm) return;
        
 
         const results = realm
           .objects("Orders")
-          .filtered("deliveryNote == $0", deliveryNote);
+          .filtered("id == $0", orderid);
 
          setOrder(results); // keep Realm objects live
         console.log("📊 Query results:", results.length);
@@ -35,24 +35,25 @@ useEffect(() => {
     loadDelines();
 
     
-  }, [deliveryNote]);
+  }, [orderid]);
 
   useEffect(() => {
     console.log("order state updated:", order);
   }, [order]);
 
 
-
   return (
     <View style={styles.container}>
       <View style={{alignItems: "center"}}> 
-       <Text style={styles.title}>Note : {deliveryNote}</Text>
+       <Text style={styles.title}>Note : {ref1AA}</Text>
       </View>
      <CustomPressable
       text="Begin Scan"
       borderRadius={18}
       hoverColor="#0EA371" // only on web
-      onPress={() => console.log("Pressed!")}
+      onPress={() => {
+          navigation.navigate("Scan",{"orderid" : orderid})
+        }}
     />
     <FlatList
   data={order}

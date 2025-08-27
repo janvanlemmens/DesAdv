@@ -11,6 +11,7 @@ const RealmHelper = {
     realmInstance = await Realm.open({
       schema: [OrdersSchema],
       path: "orders.realm",
+      deleteRealmIfMigrationNeeded: true,
     });
 
     console.log("✅ Realm opened globally");
