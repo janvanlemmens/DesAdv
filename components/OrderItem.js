@@ -49,7 +49,7 @@ export default function OrderItem({ item }) {
           </Pressable>
 
           <TextInput
-            style={styles.qtyInput}
+            style={[styles.qtyInput, confirmedQty === item.quantity && {backgroundColor: '#8cf68cff'}]}
             keyboardType="numeric"
             value={String(confirmedQty)}
             onChangeText={(text) => {
@@ -126,4 +126,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4
   },
+  confirmedCard: {
+    backgroundColor: "#e0ffe0", // light green for confirmed
+    borderColor: "#00aa00",
+  }
 });

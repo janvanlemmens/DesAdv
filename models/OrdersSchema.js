@@ -3,7 +3,7 @@ export const OrdersSchema = {
   primaryKey: "id",
   properties: {
     id: "string", // full order string
-    deliveryNote: { type: "string", indexed: true }, // extracted 4th part
+    deliveryNote: { type: "string", indexed: true }, 
     depot: { type: "string", indexed: true },
     arrival: "string",
     supplier: { type: "string", indexed: true },

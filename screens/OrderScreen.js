@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, FlatList,TextInput, Pressable } from 'react-native'
+import { StyleSheet, Text, View, FlatList,TextInput, Pressable, Alert } from 'react-native'
 import CustomPressable from '../components/CustomPressable'
 import React,  { useEffect, useState } from 'react'
 import OrderItem from '../components/OrderItem'
@@ -41,6 +41,21 @@ useEffect(() => {
     console.log("order state updated:", order);
   }, [order]);
 
+  const handleConfirm = () => {
+    realm.write(() => {
+    const delnote = realm.objectForPrimaryKey("Orders", orderid);
+     if (delnote) {
+      if (delnote.quantitycfm == 0) {
+        Alert.alert('Order','Not confirmed')
+        return;
+      }
+     realm.delete(delnote);
+   }
+});
+   navigation.navigate("Orders",{"type" : 'nu'})
+   
+  }
+
 
   return (
     <View style={styles.container}>
@@ -48,7 +63,7 @@ useEffect(() => {
        <Text style={styles.title}>Note : {ref1AA}</Text>
       </View>
      <CustomPressable
-      text="Begin Scan"
+      text="Start Scan"
       borderRadius={18}
       hoverColor="#0EA371" // only on web
       onPress={() => {
@@ -59,7 +74,14 @@ useEffect(() => {
   data={order}
   keyExtractor={(item) => item.id}
   renderItem={({ item }) => <OrderItem item={item}/>}
+  style={{ flex: 1, marginTop: 10 }}
 />
+ <CustomPressable
+      text="Confirm"
+      borderRadius={18}
+      hoverColor="#0EA371" // only on web
+      onPress={handleConfirm}
+    />
     </View>
   )
 }

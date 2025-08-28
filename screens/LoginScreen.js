@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, KeyboardAvoidingView, StyleSheet, Alert, ActivityIndicator, Platform } from 'react-native';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Realm from "realm";
 import CustomPressable from '../components/CustomPressable';
+import DeviceInfo from 'react-native-device-info';
 
 
 export default function LoginScreen({ onLogin }) {
@@ -11,8 +12,25 @@ export default function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [brand, setBrand] = useState('')
 
-  
+  useEffect(() => {
+    const logDevice = async () => {
+      const brand = DeviceInfo.getBrand();
+      const model = DeviceInfo.getModel();
+      const systemName = DeviceInfo.getSystemName();
+      const systemVersion = DeviceInfo.getSystemVersion();
+      setBrand(brand)
+
+      console.log(`Running on: ${brand} ${model} (${systemName} ${systemVersion})`);
+      //Running on: unitech EA520 (Android 11)
+      //npx react-native run-android => new android/app/build/outputs/apk/debug/app-debug.apk
+      //cd android ./gradlew assembleRelease
+      //adb install android/app/build/outputs/apk/release/app-release.apk
+    };
+
+    logDevice(); // ✅ actually run it
+  }, []);
 
   const handleLogin = async () => {
 
@@ -40,7 +58,7 @@ export default function LoginScreen({ onLogin }) {
       
       if (response.data.success) {
         await SecureStore.setItemAsync("depot",response.data.depot)
-        
+        await SecureStore.setItemAsync("brand",brand)
         onLogin(); // navigate to the main app
       } else {
         Alert.alert('Login Failed', response.data.message || 'Invalid credentials');
@@ -54,7 +72,13 @@ export default function LoginScreen({ onLogin }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Despatch Advice</Text>
+     
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+      <View style={styles.form}>
+       <Text style={styles.title}>Despatch Advice</Text>
       <TextInput
         placeholder="Username"
         style={styles.input}
@@ -78,12 +102,19 @@ export default function LoginScreen({ onLogin }) {
               onPress={handleLogin}
             />
       )}
+      </View>
+    </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
+  container: { flex: 1 },
   title: { fontSize: 32, marginBottom: 20, textAlign: 'center' },
   input: { borderWidth: 1, borderColor: '#ccc', marginBottom: 15, padding: 10, borderRadius: 5 },
+  form: {
+    flex:1,
+    justifyContent: "center",
+    padding: 16
+  }
 });

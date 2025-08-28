@@ -9,6 +9,8 @@ import LogoutButton from '../components/LogoutButton';
 import { RefreshControl } from 'react-native-gesture-handler';
 import { useRealm } from '../useRealm';
 import { useObjects } from '../useObjects';
+import { useQuery } from "@realm/react";
+
 
 
 const api = axios.create();
@@ -31,58 +33,39 @@ api.interceptors.response.use(
 
 
 
-export default function OrdersScreen({}) {
+export default function OrdersScreen({ route }) {
+ 
+
+const { type } = route.params;
 
 const [refreshing, setRefreshing] = useState(false)
 const [supplierQuery, setSupplierQuery] = useState("");
 const [noteQuery, setNoteQuery] = useState("");
+const [ready, setReady] = useState(false);
 
 const navigation = useNavigation();
 const realm = useRealm();
-const notes = useObjects("Orders") //realm's live collection
+let notes = []
+try {
+  notes = useObjects("Orders")  || []//realm's live collection
+} catch(e) {
+  console.log("Realm hook failed", e);
+}
+
+
 const flatListRef = useRef(null);
 
-
-function getDistinctNotes(dlvs) {
-  const map = new Map();
-
-  dlvs.forEach(item => {
-    // Check if this deliveryNote already exists in the map
-    if (!map.has(item.id)) {
-      // Determine if this order is confirmed
-      const isConfirmed = item.quantitycfm > 0;
-
-      map.set(item.deliveryNote, {
-        orderid: item.id,
-        deliveryNote: item.deliveryNote,
-        arrival: item.arrival,
-        supplier: item.supplier,
-        confirmed: isConfirmed // add the property
-      });
-    } else {
-      // If deliveryNote already exists, update confirmed if any item is confirmed
-      const existing = map.get(item.id);
-      if (item.quantitycfm > 0) {
-        existing.confirmed = true;
-      }
-    }
-  });
-
-  return Array.from(map.values());
-}
-  useEffect(() => {
+useEffect(() => {
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({ offset: 0, animated: false });
     }
   }, [notes]); // whenever notes change, jump to top
 
-  useEffect(() => {
-    fetchAndSaveOrders();
- 
-  }, []);
 
-   async function fetchAndSaveOrders() {
 
+// --- Fetch & save orders ---
+async function fetchAndSaveOrders() {
+    
       const dpa = await SecureStore.getItemAsync("depot");
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
       const res = await axios.post(apiUrl+"/rest.desadv.cls?func=gDeAdlist", {
@@ -95,9 +78,8 @@ function getDistinctNotes(dlvs) {
           });
 
       const data = res.data;
-
+        //console.log("data",data)
       try {
-
          if (!realm) return;
          realm.write(() => {
 
@@ -128,36 +110,87 @@ function getDistinctNotes(dlvs) {
              
       });
       });
-        notes=realm.object("Orders")
-
+      
       } catch(e) {
         console.log("Realm create failed",e);
       }    
     }
 
-    const onRefresh = async () => {
+useEffect(() => {
+  const init = async() => {
+  await fetchAndSaveOrders();
+}
+ init();
+    
+}, [realm]);
+
+if (!notes || notes.length === 0) {
+  return <Text>Loading orders...</Text>;
+}
+
+
+const today = new Date();
+const zd8 =
+    today.getFullYear().toString() +
+    String(today.getMonth() + 1).padStart(2, "0") +
+    String(today.getDate()).padStart(2, "0");
+  
+const notes1 = type === "nu"
+  ? realm.objects("Orders").filtered("arrival <= $0", zd8)
+  : realm.objects("Orders").filtered("arrival > $0", zd8);
+
+
+
+     const onRefresh = async () => {
     setRefreshing(true);
     await fetchAndSaveOrders();
     setRefreshing(false);
     };
 
-   
-  // First, sort and prepare distinct notes
-  const distinctNotesSorted = getDistinctNotes(notes)
-  .sort((a, b) => Number(b.confirmed)- Number(a.confirmed)); // confirmed first
+function getDistinctNotes(dlvs) {
+  const map = new Map();
+
+  dlvs.forEach(item => {
+    // Check if this deliveryNote already exists in the map
+    if (!map.has(item.id)) {
+      // Determine if this order is confirmed
+      const isConfirmed = item.quantitycfm > 0;
+
+      map.set(item.deliveryNote, {
+        orderid: item.id,
+        deliveryNote: item.deliveryNote,
+        arrival: item.arrival,
+        supplier: item.supplier,
+        confirmed: isConfirmed // add the property
+      });
+    } else {
+      // If deliveryNote already exists, update confirmed if any item is confirmed
+      const existing = map.get(item.id);
+      if (item.quantitycfm > 0) {
+        existing.confirmed = true;
+      }
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+ 
+  // --- Prepare distinct sorted notes ---
+  const distinctNotesSorted = getDistinctNotes(notes1).sort(
+    (a, b) => Number(b.confirmed) - Number(a.confirmed)
+  );
+  console.log("notessorted",distinctNotesSorted )
+   // --- Apply search filters ---
   const filteredData = distinctNotesSorted.filter((item) => {
-  const matchesSupplier = supplierQuery
-    ? item.supplier?.toLowerCase().includes(supplierQuery.toLowerCase())
-    : true;
-
-  const matchesNote = noteQuery
-    ? item.deliveryNote?.toLowerCase().includes(noteQuery.toLowerCase())
-    : true;
-
-  return matchesSupplier && matchesNote;
-});
-
- console.log("notessorted",distinctNotesSorted )
+    const matchesSupplier = supplierQuery
+      ? item.supplier?.toLowerCase().includes(supplierQuery.toLowerCase())
+      : true;
+    const matchesNote = noteQuery
+      ? item.deliveryNote?.toLowerCase().includes(noteQuery.toLowerCase())
+      : true;
+    return matchesSupplier && matchesNote;
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right", "bottom"]}>
