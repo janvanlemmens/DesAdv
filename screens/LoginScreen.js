@@ -38,6 +38,9 @@ export default function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [brand, setBrand] = useState("");
+  const [checkingToken, setCheckingToken] = useState(true);
+
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
 
   useEffect(() => {
     const logDevice = async () => {
@@ -57,11 +60,50 @@ export default function LoginScreen({ onLogin }) {
     };
 
     logDevice(); // ✅ actually run it
+    let mounted = true;
+
+    (async () => {
+      try {
+        const token = await SecureStore.getItemAsync("token");
+        if (!token) return;
+
+        // Verifieer token bij je API (pas URL aan naar jouw endpoint)
+        const res = await axios.get(`${apiUrl}/rest.desadv.cls?func=verify`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!mounted) return;
+
+        // Stel dat API { success: true, uname, depot, ... } teruggeeft als token ok is
+        if (res.data?.success) {
+          // Eventueel state/storage bijwerken met profielinfo
+          if (res.data.uname)
+            await SecureStore.setItemAsync("uname", res.data.uname);
+          if (res.data.depot)
+            await SecureStore.setItemAsync("depot", res.data.depot);
+          onLogin(); // -> direct door naar app
+          return;
+        } else {
+          // Ongeldig token opruimen
+          await SecureStore.deleteItemAsync("token");
+        }
+      } catch (e) {
+        // Netwerk/401 -> token ongeldig: opruimen
+        try {
+          await SecureStore.deleteItemAsync("token");
+        } catch {}
+        console.warn("Token check failed:", e?.message || e);
+      } finally {
+        if (mounted) setCheckingToken(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleLogin = async () => {
-    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-
     if (!username || !password) {
       Alert.alert("Missing Fields", "Please enter both username and password");
       return;
@@ -106,6 +148,14 @@ export default function LoginScreen({ onLogin }) {
       setLoading(false);
     }
   };
+
+  if (checkingToken) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

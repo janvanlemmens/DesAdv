@@ -35,7 +35,8 @@ export default function App() {
   const handleLogin = () => setIsLoggedIn(true);
   const handleLogout = async () => {
     // e.g. clear secure storage, tokens, etc.
-    // await SecureStore.deleteItemAsync('uname');
+    await SecureStore.deleteItemAsync("uname");
+    await SecureStore.deleteItemAsync("token");
     setIsLoggedIn(false); // <- this switches to AuthStack
   };
 
