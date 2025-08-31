@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useState } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import LoginScreen from './screens/LoginScreen';
-import TabsNavigator from './navigation/TabsNavigator'; // your existing tab navigation
+import LoginScreen from "./screens/LoginScreen";
+import TabsNavigator from "./navigation/TabsNavigator"; // your existing tab navigation
 import { RealmProvider } from "@realm/react";
-import { OrdersSchema } from './models/OrdersSchema';
+import { OrdersSchema } from "./models/OrdersSchema";
 
 const Stack = createNativeStackNavigator();
 
@@ -20,10 +20,12 @@ function AuthStack({ onLogin }) {
   );
 }
 
-function AppStack() {
+function AppStack({ onLogout }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainApp" component={TabsNavigator} />
+      <Stack.Screen name="MainApp">
+        {(props) => <TabsNavigator {...props} onLogout={onLogout} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
@@ -31,17 +33,25 @@ function AppStack() {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // <- basic auth state
   const handleLogin = () => setIsLoggedIn(true);
+  const handleLogout = async () => {
+    // e.g. clear secure storage, tokens, etc.
+    // await SecureStore.deleteItemAsync('uname');
+    setIsLoggedIn(false); // <- this switches to AuthStack
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <RealmProvider schema={[OrdersSchema]}>
         <NavigationContainer>
-          {isLoggedIn ? <AppStack /> : <AuthStack onLogin={handleLogin} />}
+          {isLoggedIn ? (
+            <AppStack onLogout={handleLogout} />
+          ) : (
+            <AuthStack onLogin={handleLogin} />
+          )}
         </NavigationContainer>
       </RealmProvider>
     </GestureHandlerRootView>
   );
-
 
   /*
   return (
