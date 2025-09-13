@@ -76,7 +76,7 @@ export default function ScanScreen({route, navigation}) {
   };
 
  const handleScanChange = (text) => {
-  if (brand ==='unitech') return;
+  //if (brand ==='unitech') return;
   setBarcode(text);
 
   // clear previous timeout
