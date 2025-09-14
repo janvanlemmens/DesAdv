@@ -6,8 +6,8 @@ import { useRealm } from "../useRealm";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ScanScreen({ route, navigation }) {
-  const { orderid } = route.params;
-  const ref1AA = orderid.split("|")[1];
+  const { arrival, supplier, deliveryNote } = route.params;
+  //const ref1AA = orderid.split("|")[1];
   const [barcode, setBarcode] = useState("");
   const [barcodes, setBarcodes] = useState([]);
   const [brand, setBrand] = useState("");
@@ -18,7 +18,7 @@ export default function ScanScreen({ route, navigation }) {
   const realm = useRealm();
   const insets = useSafeAreaInsets();
 
-  const updateQuantities = (orderId, barcodes) => {
+  const updateQuantities = (arr, supp, barcodes) => {
     realm.write(() => {
       barcodes.forEach(({ code, count }) => {
         //console.log("code", code);
@@ -36,10 +36,10 @@ export default function ScanScreen({ route, navigation }) {
 
   const handleEndScan = () => {
     console.log("barcodes", barcodes);
-    updateQuantities(orderid, barcodes);
+    updateQuantities(arrival, supplier, barcodes);
     //barcodes [{"code": "3286341037012", "count": 4}]
     setBarcodes([]);
-    navigation.navigate("Order", { orderid: orderid });
+    navigation.navigate("Order",{"arrival" : arrival, "supplier": supplier, "deliveryNote": deliveryNote})
   };
 
   // handle scanned code
@@ -143,7 +143,7 @@ export default function ScanScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 8 }]}>
       <View style={{ alignItems: "center" }}>
-        <Text style={styles.title}>Note : {ref1AA}</Text>
+        <Text style={styles.title}>Note : {deliveryNote}</Text>
       </View>
 
       <TextInput
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "600",
     marginBottom: 2,
   },

@@ -16,3 +16,13 @@ Content-Type: application/json
   "depot": 59
   
 }
+
+### DeAdList
+
+POST https://extranet.qteam.be/VPLD/rest.desadv.cls?func=DeAdList
+Content-Type: application/json
+
+{
+  "depot": 59
+  
+}

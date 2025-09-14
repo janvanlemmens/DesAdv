@@ -68,7 +68,7 @@ async function fetchAndSaveOrders() {
     
       const dpa = await SecureStore.getItemAsync("depot");
       const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-      const res = await axios.post(apiUrl+"/rest.desadv.cls?func=gDeAdlist", {
+      const res = await axios.post(apiUrl+"/rest.desadv.cls?func=DeAdList", {
         depot : dpa, 
       },
         {
@@ -151,12 +151,12 @@ function getDistinctNotes(dlvs) {
   const map = new Map();
 
   dlvs.forEach(item => {
-    // Check if this deliveryNote already exists in the map
-    if (!map.has(item.id)) {
+    const key = item.id.split('|').slice(0, 2).join('|');
+    if (!map.has(key)) {
       // Determine if this order is confirmed
       const isConfirmed = item.quantitycfm > 0;
 
-      map.set(item.deliveryNote, {
+      map.set(key, {
         orderid: item.id,
         deliveryNote: item.deliveryNote,
         arrival: item.arrival,
@@ -165,7 +165,7 @@ function getDistinctNotes(dlvs) {
       });
     } else {
       // If deliveryNote already exists, update confirmed if any item is confirmed
-      const existing = map.get(item.id);
+      const existing = map.get(key);
       if (item.quantitycfm > 0) {
         existing.confirmed = true;
       }
@@ -217,7 +217,7 @@ function getDistinctNotes(dlvs) {
       keyExtractor={(item) => item.orderid}
       renderItem={({ item }) => (
         <Pressable onPress={() => {
-          navigation.navigate("Order",{"orderid" : item.orderid})
+          navigation.navigate("Order",{"arrival" : item.arrival, "supplier": item.supplier, "deliveryNote": item.deliveryNote})
         }}>
        <View style={[styles.card, item.confirmed && styles.confirmedCard]}>
           <Text style={styles.deliverynote}>📦 Delivery Note: {item.deliveryNote}</Text>

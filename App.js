@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
+import * as SecureStore from "expo-secure-store";
 import LoginScreen from "./screens/LoginScreen";
 import TabsNavigator from "./navigation/TabsNavigator"; // your existing tab navigation
 import { RealmProvider } from "@realm/react";

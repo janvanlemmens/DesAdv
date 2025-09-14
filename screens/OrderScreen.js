@@ -5,9 +5,9 @@ import OrderItem from '../components/OrderItem'
 import { useRealm } from '../useRealm';
 
 const OrderScreen = ({route, navigation}) => {
-const {orderid} = route.params ?? {};
+const {arrival, supplier, deliveryNote} = route.params ?? {};
 const [order, setOrder] = useState([]);
-const ref1AA = orderid.split("|")[1]
+//const ref1AA = orderid.split("|")[1]
 
 const realm = useRealm();
 
@@ -23,7 +23,7 @@ useEffect(() => {
 
         const results = realm
           .objects("Orders")
-          .filtered("id == $0", orderid);
+          .filtered("arrival == $0 and supplier ==  $1", arrival, supplier);
 
          setOrder(results); // keep Realm objects live
         console.log("📊 Query results:", results.length);
@@ -35,15 +35,16 @@ useEffect(() => {
     loadDelines();
 
     
-  }, [orderid]);
+  }, []);
 
   useEffect(() => {
     console.log("order state updated:", order);
   }, [order]);
 
   const handleConfirm = () => {
+    /*
     realm.write(() => {
-    const delnote = realm.objectForPrimaryKey("Orders", orderid);
+    const delnote = realm.objectForPrimaryKey("Orders", orderid); arrival= and supplier= ervan tussen
      if (delnote) {
       if (delnote.quantitycfm == 0) {
         Alert.alert('Order','Not confirmed')
@@ -53,21 +54,21 @@ useEffect(() => {
    }
 });
    navigation.navigate("Orders",{"type" : 'nu'})
-   
+   */
   }
 
 
   return (
     <View style={styles.container}>
       <View style={{alignItems: "center"}}> 
-       <Text style={styles.title}>Note : {ref1AA}</Text>
+       <Text style={styles.title}>Note : {deliveryNote}</Text>
       </View>
      <CustomPressable
       text="Start Scan"
       borderRadius={18}
       hoverColor="#0EA371" // only on web
       onPress={() => {
-          navigation.navigate("Scan",{"orderid" : orderid})
+          navigation.navigate("Scan",{"arrival" : arrival, "supplier": supplier, "deliveryNote": deliveryNote})
         }}
     />
     <FlatList

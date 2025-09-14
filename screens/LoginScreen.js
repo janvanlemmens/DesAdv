@@ -65,6 +65,7 @@ export default function LoginScreen({ onLogin }) {
     (async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
+        console.log
         if (!token) return;
 
         // Verifieer token bij je API (pas URL aan naar jouw endpoint)
